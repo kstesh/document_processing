@@ -37,6 +37,14 @@ def _docai():
         )
     return _docai_client
 
+def classify(text: str) -> str:
+    """Simple keyword classifier. Anything that isn't an invoice is treated
+    as company data (catch-all), so we never lose a file."""
+    t = (text or "").lower()
+    if "invoice" in t:
+        return "invoice"
+    return "company_data"
+
 
 @functions_framework.cloud_event
 def process_pdf(cloud_event):
@@ -89,10 +97,17 @@ def process_pdf(cloud_event):
         ],
     }
 
+    label = classify(doc.text)
+    payload["classification"] = label
+    target_bucket = (
+        os.environ["INVOICES_BUCKET"] if label == "invoice"
+        else os.environ["COMPANY_BUCKET"]
+    )
+
     out_name = name.rsplit(".", 1)[0] + ".json"
-    _storage().bucket(os.environ["OUTPUT_BUCKET"]).blob(out_name).upload_from_string(
+    _storage().bucket(target_bucket).blob(out_name).upload_from_string(
         json.dumps(payload, ensure_ascii=False, indent=2),
         content_type="application/json",
     )
-    log.info("Wrote gs://%s/%s (%d pages)",
-             os.environ["OUTPUT_BUCKET"], out_name, len(doc.pages))
+    log.info("Classified as %s → gs://%s/%s (%d pages)",
+             label, target_bucket, out_name, len(doc.pages))

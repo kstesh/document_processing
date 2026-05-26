@@ -1,0 +1,118 @@
+<svg width="100%" viewBox="0 0 680 540" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>GCP PDF processing pipeline with classification</title>
+  <desc>PDF lands in input GCS bucket; Eventarc invokes Cloud Run function (Gen 2); function calls Document AI for OCR, then classifies the text and writes JSON into invoices or company_data bucket.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .label   { font: 500 14px "Anthropic Sans", -apple-system, "Segoe UI", sans-serif; }
+      .sublbl  { font: 400 12px "Anthropic Sans", -apple-system, "Segoe UI", sans-serif; }
+      .edgelbl { font: 400 12px "Anthropic Sans", -apple-system, "Segoe UI", sans-serif; fill: #c2c0b6; }
+      .boundary{ font: 400 12px "Anthropic Sans", -apple-system, "Segoe UI", sans-serif; fill: #c2c0b6; }
+      .storLbl { fill: #b5d4f4; }
+      .storSub { fill: #85b7eb; }
+      .evtLbl  { fill: #d3d1c7; }
+      .evtSub  { fill: #b4b2a9; }
+      .cpuLbl  { fill: #cecbf6; }
+      .cpuSub  { fill: #afa9ec; }
+      .aiLbl   { fill: #9fe1cb; }
+      .aiSub   { fill: #5dcaa5; }
+      .edge    { stroke: #9c9a92; stroke-width: 1.5; fill: none; }
+    </style>
+  </defs>
+
+  <!-- GCP project boundary -->
+  <rect x="30" y="24" width="618" height="462" rx="16" fill="none" stroke="rgba(222,220,209,0.3)" stroke-width="1" stroke-dasharray="6 4"/>
+  <text x="46" y="16" class="boundary" dominant-baseline="central">GCP project · ucu-cloud-course</text>
+
+  <!-- 1. Input bucket -->
+  <g>
+    <rect x="240" y="50" width="200" height="56" rx="8" fill="#0c447c" stroke="#85b7eb" stroke-width="0.5"/>
+    <text x="340" y="72" class="label storLbl" text-anchor="middle" dominant-baseline="central">Input GCS bucket</text>
+    <text x="340" y="91" class="sublbl storSub" text-anchor="middle" dominant-baseline="central">Incoming PDF files</text>
+  </g>
+
+  <!-- Arrow: input → eventarc -->
+  <line class="edge" x1="340" y1="106" x2="340" y2="154" marker-end="url(#arrow)"/>
+  <text x="348" y="133" class="edgelbl" dominant-baseline="central">object.finalize</text>
+
+  <!-- 2. Eventarc trigger -->
+  <g>
+    <rect x="240" y="154" width="200" height="56" rx="8" fill="#444441" stroke="#b4b2a9" stroke-width="0.5"/>
+    <text x="340" y="176" class="label evtLbl" text-anchor="middle" dominant-baseline="central">Eventarc trigger</text>
+    <text x="340" y="195" class="sublbl evtSub" text-anchor="middle" dominant-baseline="central">CloudEvent routing</text>
+  </g>
+
+  <!-- Arrow: eventarc → fn -->
+  <line class="edge" x1="340" y1="210" x2="340" y2="258" marker-end="url(#arrow)"/>
+  <text x="348" y="238" class="edgelbl" dominant-baseline="central">HTTP invoke</text>
+
+  <!-- 3. Cloud Run function (Gen 2) -->
+  <g>
+    <rect x="220" y="258" width="240" height="80" rx="8" fill="#3c3489" stroke="#afa9ec" stroke-width="0.5"/>
+    <text x="340" y="280" class="label cpuLbl" text-anchor="middle" dominant-baseline="central">Cloud Run function (Gen 2)</text>
+    <text x="340" y="299" class="sublbl cpuSub" text-anchor="middle" dominant-baseline="central">pdf-processor</text>
+    <text x="340" y="318" class="sublbl cpuSub" text-anchor="middle" dominant-baseline="central">OCR · classify · write JSON</text>
+  </g>
+
+  <!-- Arrow: fn → DocAI -->
+  <line class="edge" x1="460" y1="288" x2="510" y2="288" marker-end="url(#arrow)"/>
+  <text x="485" y="278" class="edgelbl" text-anchor="middle" dominant-baseline="central">OCR request</text>
+
+  <!-- Arrow: DocAI → fn -->
+  <line class="edge" x1="510" y1="310" x2="460" y2="310" marker-end="url(#arrow)"/>
+  <text x="485" y="322" class="edgelbl" text-anchor="middle" dominant-baseline="central">structured text</text>
+
+  <!-- 4. Document AI -->
+  <g>
+    <rect x="510" y="250" width="130" height="98" rx="8" fill="#085041" stroke="#5dcaa5" stroke-width="0.5"/>
+    <text x="575" y="274" class="label aiLbl" text-anchor="middle" dominant-baseline="central">Document AI</text>
+    <text x="575" y="293" class="sublbl aiSub" text-anchor="middle" dominant-baseline="central">OCR processor</text>
+    <text x="575" y="311" class="sublbl aiSub" text-anchor="middle" dominant-baseline="central">(eu region)</text>
+    <text x="575" y="329" class="sublbl aiSub" text-anchor="middle" dominant-baseline="central">Image → text</text>
+  </g>
+
+  <!-- Classifier decision diamond (inline note) -->
+  <g>
+    <rect x="244" y="356" width="192" height="22" rx="4" fill="#1f1a4d" stroke="#6e64ba" stroke-width="0.5" stroke-dasharray="3 3"/>
+    <text x="340" y="367" class="sublbl cpuSub" text-anchor="middle" dominant-baseline="central">classify(text): "invoice" in text ?</text>
+  </g>
+
+  <!-- Branch arrows from classifier to two output buckets -->
+  <path class="edge" d="M 280 378 L 220 408 L 170 408" marker-end="url(#arrow)"/>
+  <text x="206" y="394" class="edgelbl" text-anchor="middle" dominant-baseline="central">yes → invoice</text>
+
+  <path class="edge" d="M 400 378 L 460 408 L 510 408" marker-end="url(#arrow)"/>
+  <text x="478" y="394" class="edgelbl" text-anchor="middle" dominant-baseline="central">no → company_data</text>
+
+  <!-- 5a. Invoices bucket -->
+  <g>
+    <rect x="60" y="408" width="220" height="56" rx="8" fill="#0c447c" stroke="#85b7eb" stroke-width="0.5"/>
+    <text x="170" y="430" class="label storLbl" text-anchor="middle" dominant-baseline="central">Invoices bucket</text>
+    <text x="170" y="449" class="sublbl storSub" text-anchor="middle" dominant-baseline="central">JSON · classification=invoice</text>
+  </g>
+
+  <!-- 5b. Company data bucket -->
+  <g>
+    <rect x="400" y="408" width="220" height="56" rx="8" fill="#0c447c" stroke="#85b7eb" stroke-width="0.5"/>
+    <text x="510" y="430" class="label storLbl" text-anchor="middle" dominant-baseline="central">Company data bucket</text>
+    <text x="510" y="449" class="sublbl storSub" text-anchor="middle" dominant-baseline="central">JSON · classification=company_data</text>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <rect x="42" y="505" width="14" height="10" rx="2" fill="#0c447c" stroke="#85b7eb" stroke-width="0.5"/>
+    <text x="60" y="510" class="boundary" dominant-baseline="central">Storage (GCS)</text>
+
+    <rect x="180" y="505" width="14" height="10" rx="2" fill="#444441" stroke="#b4b2a9" stroke-width="0.5"/>
+    <text x="198" y="510" class="boundary" dominant-baseline="central">Event trigger</text>
+
+    <rect x="310" y="505" width="14" height="10" rx="2" fill="#3c3489" stroke="#afa9ec" stroke-width="0.5"/>
+    <text x="328" y="510" class="boundary" dominant-baseline="central">Compute</text>
+
+    <rect x="412" y="505" width="14" height="10" rx="2" fill="#085041" stroke="#5dcaa5" stroke-width="0.5"/>
+    <text x="430" y="510" class="boundary" dominant-baseline="central">AI service</text>
+  </g>
+</svg>

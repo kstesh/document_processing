@@ -49,8 +49,16 @@ resource "google_storage_bucket" "input" {
   depends_on                  = [google_project_service.apis]
 }
 
-resource "google_storage_bucket" "output" {
-  name                        = "${var.project_id}-pdf-output"
+resource "google_storage_bucket" "invoices" {
+  name                        = "${var.project_id}-pdf-invoices"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = true
+  depends_on                  = [google_project_service.apis]
+}
+
+resource "google_storage_bucket" "company_data" {
+  name                        = "${var.project_id}-pdf-company-data"
   location                    = var.region
   uniform_bucket_level_access = true
   force_destroy               = true
@@ -133,7 +141,8 @@ resource "google_cloudfunctions2_function" "fn" {
     timeout_seconds    = 300
     max_instance_count = 5
     environment_variables = {
-      OUTPUT_BUCKET      = google_storage_bucket.output.name
+      INVOICES_BUCKET    = google_storage_bucket.invoices.name
+      COMPANY_BUCKET     = google_storage_bucket.company_data.name
       DOCAI_PROCESSOR_ID = "projects/${var.project_id}/locations/${var.docai_location}/processors/${google_document_ai_processor.ocr.name}"
       DOCAI_LOCATION     = var.docai_location
     }
@@ -156,4 +165,5 @@ resource "google_cloudfunctions2_function" "fn" {
 }
 
 output "input_bucket" { value = google_storage_bucket.input.name }
-output "output_bucket" { value = google_storage_bucket.output.name }
+output "invoices_bucket" { value = google_storage_bucket.invoices.name }
+output "company_bucket" { value = google_storage_bucket.company_data.name }
